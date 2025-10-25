@@ -1,0 +1,163 @@
+//TABLE CODE
+
+CREATE TABLE IF NOT EXISTS Product (
+    ProductID INT AUTO_INCREMENT PRIMARY KEY,
+    ProductName VARCHAR(100) NOT NULL,
+    Price DOUBLE NOT NULL,
+    Quantity INT NOT NULL
+);
+
+//MAIN JAVA CODE
+
+import java.sql.*;
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        String url = "jdbc:mysql://bytexldb.com:5051/db_442pgv9su"; // ByteXL DB name
+        String user = "user_442pgv9su";                                // ByteXL DB username
+        String password = "p442pgv9su";                  // ByteXL DB password
+
+        Scanner sc = new Scanner(System.in);
+        Connection conn = null;
+
+        try {
+            // Load MySQL JDBC Driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            System.out.println("✅ JDBC Driver Loaded Successfully!");
+
+            // Connect to database
+            conn = DriverManager.getConnection(url, user, password);
+            conn.setAutoCommit(false); // Enable transaction handling
+            System.out.println("✅ Connected to Database!");
+
+            int choice;
+            do {
+                System.out.println("\n=== Product Management Menu ===");
+                System.out.println("1. Create Product");
+                System.out.println("2. Read Products");
+                System.out.println("3. Update Product");
+                System.out.println("4. Delete Product");
+                System.out.println("5. Exit");
+                System.out.print("Enter choice: ");
+                choice = sc.nextInt();
+                sc.nextLine(); // consume newline
+
+                switch(choice) {
+                    case 1 -> createProduct(conn, sc);
+                    case 2 -> readProducts(conn);
+                    case 3 -> updateProduct(conn, sc);
+                    case 4 -> deleteProduct(conn, sc);
+                    case 5 -> System.out.println("Exiting...");
+                    default -> System.out.println("Invalid choice!");
+                }
+            } while(choice != 5);
+
+        } catch (ClassNotFoundException e) {
+            System.out.println("❌ MySQL JDBC Driver not found!");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            System.out.println("❌ Database operation failed!");
+            e.printStackTrace();
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        } finally {
+            try {
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            sc.close();
+        }
+    }
+
+    // Create
+    public static void createProduct(Connection conn, Scanner sc) throws SQLException {
+        System.out.print("Enter Product Name: ");
+        String name = sc.nextLine();
+        System.out.print("Enter Price: ");
+        double price = sc.nextDouble();
+        System.out.print("Enter Quantity: ");
+        int quantity = sc.nextInt();
+        sc.nextLine(); // consume newline
+
+        String sql = "INSERT INTO Product(ProductName, Price, Quantity) VALUES (?, ?, ?)";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setString(1, name);
+            pst.setDouble(2, price);
+            pst.setInt(3, quantity);
+            int rows = pst.executeUpdate();
+            conn.commit();
+            System.out.println("✅ Product inserted successfully! Rows affected: " + rows);
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
+        }
+    }
+
+    // Read
+    public static void readProducts(Connection conn) throws SQLException {
+        String sql = "SELECT * FROM Product";
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+            System.out.println("\nProductID | ProductName | Price | Quantity");
+            System.out.println("-------------------------------------------");
+            while (rs.next()) {
+                System.out.printf("%d | %s | %.2f | %d%n",
+                        rs.getInt("ProductID"),
+                        rs.getString("ProductName"),
+                        rs.getDouble("Price"),
+                        rs.getInt("Quantity"));
+            }
+        }
+    }
+
+    // Update
+    public static void updateProduct(Connection conn, Scanner sc) throws SQLException {
+        System.out.print("Enter ProductID to update: ");
+        int id = sc.nextInt();
+        sc.nextLine(); // consume newline
+        System.out.print("Enter new Product Name: ");
+        String name = sc.nextLine();
+        System.out.print("Enter new Price: ");
+        double price = sc.nextDouble();
+        System.out.print("Enter new Quantity: ");
+        int quantity = sc.nextInt();
+        sc.nextLine(); // consume newline
+
+        String sql = "UPDATE Product SET ProductName=?, Price=?, Quantity=? WHERE ProductID=?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setString(1, name);
+            pst.setDouble(2, price);
+            pst.setInt(3, quantity);
+            pst.setInt(4, id);
+            int rows = pst.executeUpdate();
+            conn.commit();
+            System.out.println("✅ Product updated successfully! Rows affected: " + rows);
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
+        }
+    }
+
+    // Delete
+    public static void deleteProduct(Connection conn, Scanner sc) throws SQLException {
+        System.out.print("Enter ProductID to delete: ");
+        int id = sc.nextInt();
+        sc.nextLine(); // consume newline
+
+        String sql = "DELETE FROM Product WHERE ProductID=?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, id);
+            int rows = pst.executeUpdate();
+            conn.commit();
+            System.out.println("✅ Product deleted successfully! Rows affected: " + rows);
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
+        }
+    }
+}
