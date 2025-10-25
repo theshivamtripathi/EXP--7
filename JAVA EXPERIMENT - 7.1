@@ -1,0 +1,79 @@
+// EXPERIMENT - 7.1
+
+//MYSQL CODE FOR CREATING TABLE
+
+CREATE TABLE Employee (
+    EmpID INT PRIMARY KEY AUTO_INCREMENT,
+    Name VARCHAR(50) NOT NULL,
+    Salary DECIMAL(10,2)
+);
+
+INSERT INTO Employee (Name, Salary) VALUES
+('Simran Chugh', 55000.00),
+('Shivam Mehta', 60000.00),
+('Aditi Singh', 52000.00),
+('Rohan Verma', 48000.50),
+('Ananya Gupta', 75000.00);
+
+SELECT * FROM Employee;
+
+// MAIN JAVA CODE
+
+import java.sql.*;
+
+public class Main {
+    public static void main(String[] args) {
+        // Database connection details
+        String URL = "jdbc:mysql://bytexldb.com:5051/db_442pf8rw4";
+        String USER = "user_442pf8rw4";
+        String PASSWORD = "p442pf8rw4"; // 🔹 replace with your MySQL root password
+
+        String QUERY = "SELECT EmpID, Name, Salary FROM Employee";
+
+        try {
+            // Step 1: Load MySQL JDBC Driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            System.out.println("✅ JDBC Driver Loaded Successfully!");
+
+            // Step 2: Establish Connection
+            Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
+            System.out.println("✅ Connected to MySQL Database Successfully!\n");
+
+            // Step 3: Create a Statement
+            Statement stmt = con.createStatement();
+
+            // Step 4: Execute the SQL query
+            ResultSet rs = stmt.executeQuery(QUERY);
+
+            // Step 5: Display Results
+            System.out.println("Employee Details:");
+            System.out.println("-------------------------------------------");
+            while (rs.next()) {
+                int id = rs.getInt("EmpID");
+                String name = rs.getString("Name");
+                double salary = rs.getDouble("Salary");
+
+                System.out.println("EmpID: " + id + " | Name: " + name + " | Salary: " + salary);
+            }
+
+            // Step 6: Close all connections
+            rs.close();
+            stmt.close();
+            con.close();
+
+            System.out.println("\n✅ Data Retrieved Successfully!");
+
+        } catch (ClassNotFoundException e) {
+            System.out.println("❌ MySQL JDBC Driver not found!");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            System.out.println("❌ Database connection or query failed!");
+            e.printStackTrace();
+        }
+    }
+}
+
+
+
+
+
