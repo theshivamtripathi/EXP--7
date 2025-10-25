@@ -1,0 +1,215 @@
+//FOR TABLE
+CREATE TABLE IF NOT EXISTS Student (
+    StudentID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL,
+    Department VARCHAR(50),
+    Marks DOUBLE
+);
+
+// MODEL- Student.java
+
+public class Student {
+    private int studentID;
+    private String name;
+    private String department;
+    private double marks;
+
+    // Constructor for new student (without ID)
+    public Student(String name, String department, double marks) {
+        this.name = name;
+        this.department = department;
+        this.marks = marks;
+    }
+
+    // Constructor with ID
+    public Student(int studentID, String name, String department, double marks) {
+        this.studentID = studentID;
+        this.name = name;
+        this.department = department;
+        this.marks = marks;
+    }
+
+    // Getters and setters
+    public int getStudentID() { return studentID; }
+    public void setStudentID(int studentID) { this.studentID = studentID; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getDepartment() { return department; }
+    public void setDepartment(String department) { this.department = department; }
+
+    public double getMarks() { return marks; }
+    public void setMarks(double marks) { this.marks = marks; }
+}
+
+// Controller - StudentDAO.java
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class StudentDAO {
+    private Connection conn;
+
+    public StudentDAO(Connection conn) {
+        this.conn = conn;
+    }
+
+    // Create
+    public void addStudent(Student s) throws SQLException {
+        String sql = "INSERT INTO Student(Name, Department, Marks) VALUES(?, ?, ?)";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setString(1, s.getName());
+            pst.setString(2, s.getDepartment());
+            pst.setDouble(3, s.getMarks());
+            pst.executeUpdate();
+            conn.commit();
+            System.out.println("✅ Student added successfully!");
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
+        }
+    }
+
+    // Read
+    public List<Student> getAllStudents() throws SQLException {
+        List<Student> students = new ArrayList<>();
+        String sql = "SELECT * FROM Student";
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+            while (rs.next()) {
+                students.add(new Student(
+                        rs.getInt("StudentID"),
+                        rs.getString("Name"),
+                        rs.getString("Department"),
+                        rs.getDouble("Marks")
+                ));
+            }
+        }
+        return students;
+    }
+
+    // Update
+    public void updateStudent(Student s) throws SQLException {
+        String sql = "UPDATE Student SET Name=?, Department=?, Marks=? WHERE StudentID=?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setString(1, s.getName());
+            pst.setString(2, s.getDepartment());
+            pst.setDouble(3, s.getMarks());
+            pst.setInt(4, s.getStudentID());
+            pst.executeUpdate();
+            conn.commit();
+            System.out.println("✅ Student updated successfully!");
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
+        }
+    }
+
+    // Delete
+    public void deleteStudent(int studentID) throws SQLException {
+        String sql = "DELETE FROM Student WHERE StudentID=?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, studentID);
+            pst.executeUpdate();
+            conn.commit();
+            System.out.println("✅ Student deleted successfully!");
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
+        }
+    }
+}
+
+// View- Main.java
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        String url = "jdbc:mysql://bytexldb.com:5051/db_442phe2j6";
+        String user = "user_442phe2j6";
+        String password = "p442phe2j6"; // ByteXL SQL password
+
+        Scanner sc = new Scanner(System.in);
+        Connection conn = null;
+
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            conn = DriverManager.getConnection(url, user, password);
+            conn.setAutoCommit(false);
+
+            StudentDAO dao = new StudentDAO(conn);
+
+            int choice;
+            do {
+                System.out.println("\n=== Student Management Menu ===");
+                System.out.println("1. Add Student");
+                System.out.println("2. View All Students");
+                System.out.println("3. Update Student");
+                System.out.println("4. Delete Student");
+                System.out.println("5. Exit");
+                System.out.print("Enter choice: ");
+                choice = sc.nextInt();
+                sc.nextLine(); // consume newline
+
+                switch(choice) {
+                    case 1 -> {
+                        System.out.print("Enter Name: ");
+                        String name = sc.nextLine();
+                        System.out.print("Enter Department: ");
+                        String dept = sc.nextLine();
+                        System.out.print("Enter Marks: ");
+                        double marks = sc.nextDouble();
+                        sc.nextLine();
+                        dao.addStudent(new Student(name, dept, marks));
+                    }
+                    case 2 -> {
+                        List<Student> students = dao.getAllStudents();
+                        System.out.println("\nID | Name | Department | Marks");
+                        for (Student s : students) {
+                            System.out.printf("%d | %s | %s | %.2f%n",
+                                    s.getStudentID(), s.getName(), s.getDepartment(), s.getMarks());
+                        }
+                    }
+                    case 3 -> {
+                        System.out.print("Enter StudentID to update: ");
+                        int id = sc.nextInt();
+                        sc.nextLine();
+                        System.out.print("Enter new Name: ");
+                        String name = sc.nextLine();
+                        System.out.print("Enter new Department: ");
+                        String dept = sc.nextLine();
+                        System.out.print("Enter new Marks: ");
+                        double marks = sc.nextDouble();
+                        sc.nextLine();
+                        dao.updateStudent(new Student(id, name, dept, marks));
+                    }
+                    case 4 -> {
+                        System.out.print("Enter StudentID to delete: ");
+                        int id = sc.nextInt();
+                        sc.nextLine();
+                        dao.deleteStudent(id);
+                    }
+                    case 5 -> System.out.println("Exiting...");
+                    default -> System.out.println("Invalid choice!");
+                }
+            } while(choice != 5);
+
+        } catch (ClassNotFoundException e) {
+            System.out.println("❌ JDBC Driver not found!");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            System.out.println("❌ Database operation failed!");
+            e.printStackTrace();
+            try { if (conn != null) conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+        } finally {
+            try { if (conn != null) conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+            sc.close();
+        }
+    }
+}
