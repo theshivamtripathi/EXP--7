@@ -1,0 +1,147 @@
+8.2
+// ---------- employee.html ----------
+/*
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employee Records</title>
+</head>
+<body>
+    <h2>Employee Records</h2>
+
+    <!-- Search Form -->
+    <form action="EmployeeServlet" method="get">
+        <label>Enter Employee ID:</label>
+        <input type="text" name="empid" placeholder="Enter ID to search">
+        <input type="submit" value="Search">
+    </form>
+
+    <br><hr><br>
+
+    <form action="EmployeeServlet" method="get">
+        <input type="submit" value="Show All Employees">
+    </form>
+</body>
+</html>
+*/
+
+
+// ---------- EmployeeServlet.java ----------
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import javax.servlet.annotation.WebServlet;
+import java.sql.*;
+
+@WebServlet("/EmployeeServlet")
+public class EmployeeServlet extends HttpServlet {
+
+    // Database details — change according to your setup
+    static final String JDBC_URL = "jdbc:mysql://localhost:3306/testdb";
+    static final String DB_USER = "root";
+    static final String DB_PASS = "root";
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        String empId = request.getParameter("empid");
+
+        out.println("<html><body>");
+        out.println("<h2>Employee Details</h2>");
+
+        try {
+            // Load JDBC driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+
+            // Establish connection
+            Connection con = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+
+            Statement stmt;
+            ResultSet rs;
+
+            if (empId != null && !empId.trim().isEmpty()) {
+                // Fetch specific employee by ID
+                stmt = con.createStatement();
+                rs = stmt.executeQuery("SELECT * FROM Employee WHERE EmpID=" + empId);
+                if (!rs.next()) {
+                    out.println("<p><b>No employee found with ID " + empId + "</b></p>");
+                } else {
+                    out.println("<table border='1' cellpadding='10'>");
+                    out.println("<tr><th>EmpID</th><th>Name</th><th>Salary</th></tr>");
+                    do {
+                        out.println("<tr><td>" + rs.getInt("EmpID") + "</td><td>" 
+                                + rs.getString("Name") + "</td><td>" 
+                                + rs.getDouble("Salary") + "</td></tr>");
+                    } while (rs.next());
+                    out.println("</table>");
+                }
+            } else {
+                // Fetch all employees
+                stmt = con.createStatement();
+                rs = stmt.executeQuery("SELECT * FROM Employee");
+                out.println("<table border='1' cellpadding='10'>");
+                out.println("<tr><th>EmpID</th><th>Name</th><th>Salary</th></tr>");
+                while (rs.next()) {
+                    out.println("<tr><td>" + rs.getInt("EmpID") + "</td><td>" 
+                            + rs.getString("Name") + "</td><td>" 
+                            + rs.getDouble("Salary") + "</td></tr>");
+                }
+                out.println("</table>");
+            }
+
+            // Close connections
+            con.close();
+
+        } catch (Exception e) {
+            out.println("<p style='color:red;'>Error: " + e.getMessage() + "</p>");
+            e.printStackTrace(out);
+        }
+
+        out.println("<br><a href='employee.html'>Go Back</a>");
+        out.println("</body></html>");
+        out.close();
+    }
+}
+
+
+// ---------- Database Setup (Run in MySQL Workbench) ----------
+/*
+CREATE DATABASE testdb;
+USE testdb;
+
+CREATE TABLE Employee (
+    EmpID INT PRIMARY KEY,
+    Name VARCHAR(50),
+    Salary DOUBLE
+);
+
+INSERT INTO Employee VALUES 
+(101, 'Alice', 50000),
+(102, 'Bob', 60000),
+(103, 'Charlie', 55000);
+*/
+
+
+// ---------- web.xml (only needed if not using annotations) ----------
+/*
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+         http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+    <servlet>
+        <servlet-name>EmployeeServlet</servlet-name>
+        <servlet-class>EmployeeServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>EmployeeServlet</servlet-name>
+        <url-pattern>/EmployeeServlet</url-pattern>
+    </servlet-mapping>
+</web-app>
+*/
