@@ -1,0 +1,137 @@
+8.3
+// ---------- attendance.jsp ----------
+/*
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1" pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Attendance Portal</title>
+</head>
+<body>
+    <h2>Student Attendance Form</h2>
+    <form action="AttendanceServlet" method="post">
+        <label>Student ID:</label>
+        <input type="text" name="studentId" required><br><br>
+
+        <label>Date (YYYY-MM-DD):</label>
+        <input type="date" name="date" required><br><br>
+
+        <label>Status:</label>
+        <select name="status">
+            <option value="Present">Present</option>
+            <option value="Absent">Absent</option>
+        </select><br><br>
+
+        <input type="submit" value="Submit Attendance">
+    </form>
+</body>
+</html>
+*/
+
+
+// ---------- AttendanceServlet.java ----------
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import javax.servlet.annotation.WebServlet;
+import java.sql.*;
+
+@WebServlet("/AttendanceServlet")
+public class AttendanceServlet extends HttpServlet {
+
+    // Database connection details (change according to your system)
+    static final String JDBC_URL = "jdbc:mysql://localhost:3306/testdb";
+    static final String DB_USER = "root";
+    static final String DB_PASS = "root";
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        // Get form data
+        String studentId = request.getParameter("studentId");
+        String date = request.getParameter("date");
+        String status = request.getParameter("status");
+
+        try {
+            // Load JDBC driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+
+            // Connect to DB
+            Connection con = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASS);
+
+            // Insert data
+            String query = "INSERT INTO Attendance (StudentID, Date, Status) VALUES (?, ?, ?)";
+            PreparedStatement ps = con.prepareStatement(query);
+            ps.setString(1, studentId);
+            ps.setString(2, date);
+            ps.setString(3, status);
+
+            int rows = ps.executeUpdate();
+
+            if (rows > 0) {
+                out.println("<html><body>");
+                out.println("<h2>Attendance Recorded Successfully!</h2>");
+                out.println("<p>Student ID: " + studentId + "</p>");
+                out.println("<p>Date: " + date + "</p>");
+                out.println("<p>Status: " + status + "</p>");
+                out.println("<a href='attendance.jsp'>Go Back</a>");
+                out.println("</body></html>");
+            } else {
+                out.println("<html><body>");
+                out.println("<h2 style='color:red;'>Failed to record attendance.</h2>");
+                out.println("<a href='attendance.jsp'>Try Again</a>");
+                out.println("</body></html>");
+            }
+
+            con.close();
+
+        } catch (Exception e) {
+            out.println("<html><body>");
+            out.println("<h2 style='color:red;'>Error: " + e.getMessage() + "</h2>");
+            out.println("<a href='attendance.jsp'>Go Back</a>");
+            out.println("</body></html>");
+            e.printStackTrace(out);
+        }
+
+        out.close();
+    }
+}
+
+
+// ---------- Database Setup (Run in MySQL Workbench) ----------
+/*
+CREATE DATABASE testdb;
+USE testdb;
+
+CREATE TABLE Attendance (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    StudentID VARCHAR(20),
+    Date DATE,
+    Status VARCHAR(10)
+);
+*/
+
+
+// ---------- web.xml (only needed if not using annotations) ----------
+/*
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+         http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+    <servlet>
+        <servlet-name>AttendanceServlet</servlet-name>
+        <servlet-class>AttendanceServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>AttendanceServlet</servlet-name>
+        <url-pattern>/AttendanceServlet</url-pattern>
+    </servlet-mapping>
+</web-app>
+*/
